@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
@@ -20,11 +21,28 @@ class RockPaperScissorsGame extends StatelessWidget {
               ),
               Center(
                 child: Consumer<_ViewModel>(
-                  builder: (context, viewModel, child) => IndexedStack(
-                    index: viewModel.index,
-                    children: _ViewModel.assets
-                        .map<Widget>((e) => Image.asset(e))
-                        .toList(),
+                  builder: (context, viewModel, child) => Visibility(
+                    visible: viewModel.countdownTime == 0,
+                    child: IndexedStack(
+                      index: viewModel.index,
+                      children: _ViewModel.assets
+                          .map<Widget>((e) => Image.asset(e))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ),
+              Center(
+                child: Consumer<_ViewModel>(
+                  builder: (context, viewModel, child) => Visibility(
+                    visible: viewModel.countdownTime != 0,
+                    child: Text(
+                      viewModel.countdownTime.toString(),
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -51,12 +69,35 @@ class _ViewModel with ChangeNotifier {
   int _index = 0;
   int get index => _index;
 
+  Timer _countdownTimer;
+  int _countdownTime = 3;
+  int get countdownTime => _countdownTime;
+
   _ViewModel() {
     refresh();
   }
 
   refresh() {
+    _countdownTimer?.cancel();
+    _countdownTime = 3;
+    _countdownTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) {
+        _countdownTime -= 1;
+        notifyListeners();
+        if (countdownTime == 0) {
+          _countdownTimer.cancel();
+        }
+      },
+    );
+
     _index = Random().nextInt(assets.length);
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
   }
 }
